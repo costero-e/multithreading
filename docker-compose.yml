@@ -18,7 +18,7 @@ services:
  client:
     build:
       context: ./client
-    command: [ "yarn", "start" ]
+    command: node /opt/yarn-v1.22.19/bin/yarn.js start
     container_name: perusable-client
     depends_on:
       - beaconega
