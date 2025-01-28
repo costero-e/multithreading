@@ -104,7 +104,7 @@ async def ws_server(websocket):
  
  
 async def main():
-    async with websockets.serve(ws_server, "0.0.0.0", 5700):
+    async with websockets.serve(ws_server, "0.0.0.0", 3000):
         await asyncio.Future()
  
 if __name__ == "__main__":

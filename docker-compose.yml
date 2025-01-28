@@ -7,5 +7,5 @@ services:
       context: .
     container_name: apiplatz
     ports:
-      - "5700:5700"
+      - "3000:3000"
     entrypoint: ['python','server.py']
