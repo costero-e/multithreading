@@ -17,7 +17,7 @@
    </div>
 
    <script>
-      const socket = new WebSocket('ws://localhost:3000');
+      const socket = new WebSocket('ws://localhost:5700');
 
       socket.addEventListener('open', 
       () => {
@@ -34,7 +34,25 @@
       document.getElementById('sendButton').addEventListener('click', 
       () => {
       const messageInput = document.getElementById('messageInput');
-      const message = messageInput.value;
+      const message = {
+                "meta": {
+                    "apiVersion": "2.0"
+                },
+                "query": { "requestParameters": {        },
+                    "filters": [
+            {"id": "ethnicity",
+                    "operator": "=",
+                    "value": "European",
+            "scope":"individual"}],
+                    "includeResultsetResponses": "NONE",
+                    "pagination": {
+                        "skip": 0,
+                        "limit": 10
+                    },
+                    "testMode": true,
+                    "requestedGranularity": "count"
+                }
+            }
     
       socket.send(JSON.stringify(message));
       messageInput.value = '';

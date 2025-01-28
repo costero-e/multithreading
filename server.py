@@ -17,28 +17,28 @@ async def beacon_request(session, url, data):
         return response_obj
 
 async def requesting(websocket):
-    data={"meta": {
-            "apiVersion": "2.0"
-        },
-        "query":{ "requestParameters": {        },
-            "filters": [
-    {"id":"DOID:9256", "scope":"individual"}],
-            "includeResultsetResponses": "HIT",
-            "pagination": {
-                "skip": 0,
-                "limit": 10
-            },
-            "testMode": "false",
-            "requestedGranularity": "record"
-        }
-    }
+    data={}
     my_timeout = aiohttp.ClientTimeout(
     total=60, # total timeout (time consists connection establishment for a new connection or waiting for a free connection from a pool if pool connection limits are exceeded) default value is 5 minutes, set to `None` or `0` for unlimited timeout
     sock_connect=10, # Maximal number of seconds for connecting to a peer for a new connection, not given from a pool. See also connect.
     sock_read=10 # Maximal number of seconds for reading a portion of data from a peer
 )
     async with aiohttp.ClientSession(timeout=my_timeout) as session:
-        url = 'https://beacon-spain.ega-archive.org/api/individuals'
+        url = 'https://beacon-spain.ega-archive.org/api/individuals?filters=NCIT:C20197'
+        response_obj = await beacon_request(session, url, data)
+        #LOG.warning(json.dumps(response_obj))
+        return json.dumps(response_obj)
+        #return web.Response(text=json.dumps(response_obj), status=200, content_type='application/json')
+
+async def requesting2(websocket):
+    data={}
+    my_timeout = aiohttp.ClientTimeout(
+    total=60, # total timeout (time consists connection establishment for a new connection or waiting for a free connection from a pool if pool connection limits are exceeded) default value is 5 minutes, set to `None` or `0` for unlimited timeout
+    sock_connect=10, # Maximal number of seconds for connecting to a peer for a new connection, not given from a pool. See also connect.
+    sock_read=10 # Maximal number of seconds for reading a portion of data from a peer
+)
+    async with aiohttp.ClientSession(timeout=my_timeout) as session:
+        url = 'https://beacon-af-spain-demo.ega-archive.org/api/individuals?filters=NCIT:C20197'
         response_obj = await beacon_request(session, url, data)
         #LOG.warning(json.dumps(response_obj))
         return json.dumps(response_obj)
@@ -59,7 +59,7 @@ async def hello2():
         task = await loop.run_in_executor(pool, requesting)
         tasks.append(task)
     with ThreadPoolExecutor() as pool:
-        task = await loop.run_in_executor(pool, returning)
+        task = await loop.run_in_executor(pool, requesting2)
         tasks.append(task)
     LOG.warning(tasks)
     #LOG.warning([(t.get_name(), t._state) for t in tasks])
@@ -72,31 +72,38 @@ async def ws_server(websocket):
     try:
 
         firstitem = await websocket.recv()
-        seconditem = await websocket.recv()
+        token = await websocket.recv()
 
         # Prompt message when any of the field is missing
-        if firstitem == "" or seconditem == "":
+        if firstitem == "" or token == "":
             LOG.warning("Not accepted.")
 
 
         LOG.warning(f"First: {firstitem}")
-        LOG.warning(f"Second: {seconditem}")
+        LOG.warning(f"Token: {token}")
 
         list_of_sockets=[]
 
         start_time = perf_counter()
         loop=asyncio.get_running_loop()
         tasks=[]
+        final_response = {}
         with ThreadPoolExecutor() as pool:
             task = await loop.run_in_executor(pool, requesting, websocket)
             tasks.append(task)
         with ThreadPoolExecutor() as pool:
-            task = await loop.run_in_executor(pool, returning, websocket)
+            task = await loop.run_in_executor(pool, requesting2, websocket)
             tasks.append(task)
         for task in itertools.islice(asyncio.as_completed(tasks), 2):
             response = await task
-            list_of_sockets.append(response)
-            await websocket.send(f"{list_of_sockets}")
+            response = json.loads(response)
+            if final_response == {}:
+                final_response = response
+                await websocket.send(f"{final_response}")
+            else:
+                for responsed in response["response"]["resultSets"]:
+                    final_response["response"]["resultSets"].append(responsed)
+                await websocket.send(f"{final_response}")
             
  
     except websockets.ConnectionClosedError as e:
@@ -104,7 +111,7 @@ async def ws_server(websocket):
  
  
 async def main():
-    async with websockets.serve(ws_server, "0.0.0.0", 3000):
+    async with websockets.serve(ws_server, "0.0.0.0", 5700):
         await asyncio.Future()
  
 if __name__ == "__main__":
