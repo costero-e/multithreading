@@ -68,7 +68,7 @@ async def hello2():
  
 # Creating WebSocket server
 async def ws_server(websocket):
-    print("WebSocket: Server Started.")
+    LOG.warning("WebSocket: Server Started.")
     try:
 
         firstitem = await websocket.recv()
@@ -76,11 +76,11 @@ async def ws_server(websocket):
 
         # Prompt message when any of the field is missing
         if firstitem == "" or seconditem == "":
-            print("Not accepted.")
+            LOG.warning("Not accepted.")
 
 
-        print(f"First: {firstitem}")
-        print(f"Second: {seconditem}")
+        LOG.warning(f"First: {firstitem}")
+        LOG.warning(f"Second: {seconditem}")
 
         list_of_sockets=[]
 
@@ -100,11 +100,11 @@ async def ws_server(websocket):
             
  
     except websockets.ConnectionClosedError as e:
-        print (e)
+        LOG.warning(e)
  
  
 async def main():
-    async with websockets.serve(ws_server, "localhost", 5700):
+    async with websockets.serve(ws_server, "0.0.0.0", 5700):
         await asyncio.Future()
  
 if __name__ == "__main__":
